@@ -255,80 +255,64 @@ class Createimagetrainingusernew(APIView):
                 "error":"username does not exist"
             },status=status.HTTP_403_FORBIDDEN)
 
-        findusertrainingforimage=models.Datawajahnew.objects.filter(user_id=items.id)
+        savedimage=[]
+        for image in images:
+            serial=serializer.Imagedatawajahserializernew(data={
+                "user":items.id,
+                "image_user":image
+            })
+            if serial.is_valid():
+                serial.save()
+                training_dir=os.path.join('media','imagetraining')
+                model_save='lbph_model.xml'
+                model_save_path=os.path.join('hasiltraining',model_save)
+                train_or_update_user_data(
+                    training_dir=training_dir,
+                    model_save_path=model_save_path,
+                    target_user=items.first_name + items.last_name,
+                    target_label=int(items.face_id)
+                )
+                savedimage.append(serial.data)
+            else:
+                return Response(
+                    data={
+                        "status":"error",
+                        "message":serial.errors
+                    },status=status.HTTP_400_BAD_REQUEST
+                )
+        return Response(
+            data={
+                'status':'success',
+                'message':'berhasil mendaftar gambar wajah untuk user baru',
+                'data':savedimage
+            },status=status.HTTP_200_OK
+        )
 
 
-        if not findusertrainingforimage:
-            savedimage=[]
-            for image in images:
-                serial=serializer.Imagedatawajahserializernew(data={
-                    "user":items.id,
-                    "image_user":image
-                })
-                if serial.is_valid():
-                    serial.save()
-                    training_dir=os.path.join('media','imagetraining')
-                    model_save='lbph_model.xml'
-                    model_save_path=os.path.join('hasiltraining',model_save)
-                    train_or_update_user_data(
-                        training_dir=training_dir,
-                        model_save_path=model_save_path,
-                        target_user=items.first_name + items.last_name,
-                        target_label=int(items.face_id)
-                    )
-                    savedimage.append(serial.data)
-                else:
-                    return Response(
-                        data={
-                            "status":"error",
-                            "message":serial.errors
-                        },status=status.HTTP_400_BAD_REQUEST
-                    )
-            return Response(
-                data={
-                    'status':'success',
-                    'message':'berhasil mendaftar gambar wajah untuk user baru',
-                    'data':savedimage
-                },status=status.HTTP_200_OK
-            )
+class Getimageexistsuser(APIView):
+    def get(self,request):
+        username=request.query_params.get("username",None)
+        try:
+            items=User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({
+                "error":"username does not exist"
+            },status=status.HTTP_403_FORBIDDEN)
+        gambarexist=models.Datawajahnew.objects.filter(user_id=items.id)
+        print(gambarexist)
+        if not gambarexist:
+            return Response({
+                "error":"gambar user tidak ditemukan"
+            },status=status.HTTP_403_FORBIDDEN)
         else:
-            savedimage=[]
-            for image in images:
-                serial=serializer.Imagedatawajahserializernew(data={
-                    "user":items.id,
-                    "image_user":image
-                })
-                if serial.is_valid():
-                    serial.save()
-                    training_dir=os.path.join('media','imagetraining')
-                    model_save='lbph_model.xml'
-                    model_save_path=os.path.join('hasiltraining',model_save)
-                    train_or_update_user_data(
-                        training_dir=training_dir,
-                        model_save_path=model_save_path,
-                        target_user=items.first_name + items.last_name,
-                        target_label=int(items.face_id)
-                    )
-                    savedimage.append(serial.data)
-                else:
-                    return Response(
-                        data={
-                            "status":"error",
-                            "message":serial.errors
-                        },status=status.HTTP_400_BAD_REQUEST
-                    )
+            data=serializer.Imagedatawajahserializernew(gambarexist,many=True)
             return Response(
                 data={
                     'status':'success',
-                    'message':'berhasil mendaftar gambar wajah untuk user lama',
-                    'data':savedimage
+                    'message':'gambar user ditemukan',
+                    'data':data.data
                 },status=status.HTTP_200_OK
             )
-
-
-
-
-
 
 class Createlogusersmartnew(APIView):
     parser_classes = [MultiPartParser,FormParser]
