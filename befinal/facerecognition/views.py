@@ -283,7 +283,7 @@ class Createimagetrainingusernew(APIView):
         return Response(
             data={
                 'status':'success',
-                'message':'berhasil mendaftar gambar wajah untuk user baru',
+                'message':'berhasil mendaftar gambar wajah',
                 'data':savedimage
             },status=status.HTTP_200_OK
         )
